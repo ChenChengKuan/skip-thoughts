@@ -42,6 +42,7 @@ def trainer(X, C, stmodel,
             optimizer='adam',
             batch_size = 16,
             saveto='/u/rkiros/research/semhash/models/toy.npz',
+            savepath="",
             dictionary='/ais/gobi3/u/rkiros/bookgen/book_dictionary_large.pkl',
             embeddings=None,
             saveFreq=1000,
@@ -50,6 +51,7 @@ def trainer(X, C, stmodel,
 
     # Model options
     model_options = {}
+    model_options['savepath'] = savepath
     model_options['dimctx'] = dimctx
     model_options['dim_word'] = dim_word
     model_options['dim'] = dim
@@ -74,9 +76,9 @@ def trainer(X, C, stmodel,
     print model_options
 
     # reload options
-    if reload_ and os.path.exists(saveto):
-        print 'reloading...' + saveto
-        with open('%s.pkl'%saveto, 'rb') as f:
+    if reload_ and os.path.exists(savepath + saveto):
+        print 'reloading...' + savepath + saveto
+        with open('{}.pkl'.format(savepath + saveto), 'rb') as f:
             models_options = pkl.load(f)
 
     # load dictionary
@@ -110,8 +112,8 @@ def trainer(X, C, stmodel,
     print 'Building model'
     params = init_params(model_options, preemb=preemb)
     # reload parameters
-    if reload_ and os.path.exists(saveto):
-        params = load_params(saveto, params)
+    if reload_ and os.path.exists(savepath + saveto):
+        params = load_params(savepath + saveto, params)
 
     tparams = init_tparams(params)
 
@@ -179,7 +181,7 @@ def trainer(X, C, stmodel,
 
             x, mask, ctx = homogeneous_data.prepare_data(x, c, worddict, stmodel, maxlen=maxlen_w, n_words=n_words)
 
-            if x == None:
+            if x is None:
                 print 'Minibatch with zero sample under length ', maxlen_w
                 uidx -= 1
                 continue
@@ -200,8 +202,8 @@ def trainer(X, C, stmodel,
                 print 'Saving...',
 
                 params = unzip(tparams)
-                numpy.savez(saveto, history_errs=[], **params)
-                pkl.dump(model_options, open('%s.pkl'%saveto, 'wb'))
+                numpy.savez(savepath + "/" + saveto, history_errs=[], **params)
+                pkl.dump(model_options, open('{}.pkl'.format(savepath + "/" + saveto), 'wb'))
                 print 'Done'
 
             if numpy.mod(uidx, sampleFreq) == 0:
