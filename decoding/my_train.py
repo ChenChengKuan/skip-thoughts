@@ -5,7 +5,7 @@ import sys
 import argparse
 sys.path.append("../")
 import skipthoughts
-
+os.environ["THEANO_FLAGS"] = "device=cuda2"
 SKMODEL = "/media/VSlab3/kuanchen_arxiv/NeuralStoryTeller/"
 
 def main():

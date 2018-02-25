@@ -33,7 +33,7 @@ def trainer(X, C, stmodel,
             encoder='gru',
             decoder='gru',
             doutput=False,
-            max_epochs=5,
+            max_epochs=150,
             dispFreq=1,
             decay_c=0.,
             grad_clip=5.,
@@ -72,7 +72,8 @@ def trainer(X, C, stmodel,
     model_options['saveFreq'] = saveFreq
     model_options['sampleFreq'] = sampleFreq
     model_options['reload_'] = reload_
-
+    loss_monitor = []
+    sample_monitor = {}
     print model_options
 
     # reload options
@@ -197,30 +198,38 @@ def trainer(X, C, stmodel,
 
             if numpy.mod(uidx, dispFreq) == 0:
                 print 'Epoch ', eidx, 'Update ', uidx, 'Cost ', cost, 'UD ', ud
-
+                loss_monitor.append(cost)
             if numpy.mod(uidx, saveFreq) == 0:
                 print 'Saving...',
 
                 params = unzip(tparams)
                 numpy.savez(savepath + "/" + saveto, history_errs=[], **params)
                 pkl.dump(model_options, open('{}.pkl'.format(savepath + "/" + saveto), 'wb'))
+                pkl.dump(loss_monitor, open('{}.pkl'.format(savepath + "/" + "loss"), 'wb'))
+                pkl.dump(sample_monitor, open('{}.pkl'.format(savepath + "/" + "sample"), 'wb'))
                 print 'Done'
 
             if numpy.mod(uidx, sampleFreq) == 0:
                 x_s = x
                 mask_s = mask
                 ctx_s = ctx
+                sample_monitor[uidx] = {'gt':{}, 'sample':{}}
                 for jj in xrange(numpy.minimum(10, len(ctx_s))):
                     sample, score = gen_sample(tparams, f_init, f_next, ctx_s[jj].reshape(1, model_options['dimctx']), model_options,
                                                trng=trng, k=1, maxlen=100, stochastic=False, use_unk=False)
                     print 'Truth ',jj,': ',
+                    tmp_gt = []
                     for vv in x_s[:,jj]:
                         if vv == 0:
                             break
                         if vv in word_idict:
                             print word_idict[vv],
+                            tmp_gt.append(word_idict[vv])
                         else:
                             print 'UNK',
+                            tmp_gt.append('UNK')
+                    sample_monitor[uidx]['gt'][jj] = tmp_gt
+                    tmp_sample = []
                     print
                     for kk, ss in enumerate([sample[0]]):
                         print 'Sample (', kk,') ', jj, ': ',
@@ -229,9 +238,12 @@ def trainer(X, C, stmodel,
                                 break
                             if vv in word_idict:
                                 print word_idict[vv],
+                                tmp_sample.append(word_idict[vv])
                             else:
                                 print 'UNK',
+                                tmp_sample.append('UNK')
                     print
+                    sample_monitor[uidx]['sample'][jj] = tmp_sample
 
         print 'Seen %d samples'%n_samples
 
